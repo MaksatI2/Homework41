@@ -1,5 +1,6 @@
 package server;
 
+import javax.sound.sampled.ReverbType;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -39,6 +40,10 @@ public class EchoServer {
 
     }
 
+    public static String reverseString(String str) {
+        return new StringBuilder(str).reverse().toString();
+    }
+
     private void handle(Socket socket) throws IOException {
         try (Scanner scanner = new Scanner(socket.getInputStream(), "UTF-8");
              PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
@@ -47,7 +52,7 @@ public class EchoServer {
                 String message = scanner.nextLine().strip();
                 System.out.printf("Получено: %s%n", message);
 
-                writer.println("Отправлено: " + message);
+                writer.println("Отправлено: " + reverseString(message));
 
                 if (message.equalsIgnoreCase("bye")) {
                     System.out.println("Клиент отключился.");
