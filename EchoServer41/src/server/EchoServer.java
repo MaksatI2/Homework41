@@ -1,69 +1,72 @@
 package server;
 
-import javax.sound.sampled.ReverbType;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.NoSuchElementException;
+import java.io.*;
+import java.net.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.function.Function;
 
 public class EchoServer {
-
     private final int port;
-
-    private EchoServer(int port) {
-        this.port = port;
-    }
-
+    private final Map<String, Function<String, String>> commands = new HashMap<>();
 
     public static EchoServer bindToPort(int port) {
         return new EchoServer(port);
     }
 
+    public EchoServer(int port) {
+        this.port = port;
+        commands.put("date", msg -> LocalDate.now().toString());
+        commands.put("time", msg -> LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        commands.put("reverse", msg -> new StringBuilder(msg).reverse().toString());
+        commands.put("upper", msg -> msg.toUpperCase());
+        commands.put("bye", msg -> "BYE");
+    }
+
     public void run() {
-
-        try (var server = new ServerSocket(port)) {
+        System.out.println("Сервер запущен на порту " + port);
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
-                try (var clientSocket = server.accept()) {
-                    handle(clientSocket);
-                }
+                Socket socket = serverSocket.accept();
+                System.out.println("Подключился клиент: " + socket.getInetAddress());
+
+                new Thread(() -> handleClient(socket)).start();
             }
-
         } catch (IOException e) {
-            var formatMsg = "Вероятнее всего порт %s занят.%n";
-            System.out.printf(formatMsg, port);
             e.printStackTrace();
-
         }
-
     }
 
-    public static String reverseString(String str) {
-        return new StringBuilder(str).reverse().toString();
-    }
-
-    private void handle(Socket socket) throws IOException {
-        try (Scanner scanner = new Scanner(socket.getInputStream(), "UTF-8");
+    private void handleClient(Socket socket) {
+        try (Scanner scanner = new Scanner(socket.getInputStream());
              PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
 
             while (scanner.hasNextLine()) {
-                String message = scanner.nextLine().strip();
-                System.out.printf("Получено: %s%n", message);
+                String input = scanner.nextLine();
+                String[] parts = input.split(" ", 2);
+                String command = parts[0];
+                String argument = parts.length > 1 ? parts[1] : "";
 
-                writer.println("Отправлено: " + reverseString(message));
+                String response = commands.getOrDefault(command, msg -> msg).apply(argument);
+                writer.println(response);
 
-                if (message.equalsIgnoreCase("bye")) {
-                    System.out.println("Клиент отключился.");
+                if (command.equalsIgnoreCase("bye")) {
+                    System.out.println("Клиент отключился: " + socket.getInetAddress());
                     break;
                 }
             }
-        } catch (NoSuchElementException ex) {
-            System.out.println("Клиент неожиданно отключился.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
-
-
-
 }
