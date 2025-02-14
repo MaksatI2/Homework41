@@ -23,9 +23,10 @@ public class EchoServer {
     public void run() {
 
         try (var server = new ServerSocket(port)) {
-
-            try (var clientSocket = server.accept()) {
-                handle(clientSocket);
+            while (true) {
+                try (var clientSocket = server.accept()) {
+                    handle(clientSocket);
+                }
             }
 
         } catch (IOException e) {
