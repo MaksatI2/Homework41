@@ -1,5 +1,7 @@
+import server.EchoServer;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        EchoServer.bindToPort(4040).run();
     }
 }
