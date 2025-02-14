@@ -51,12 +51,16 @@ public class EchoServer {
                 String command = parts[0];
                 String argument = parts.length > 1 ? parts[1] : "";
 
-                String response = commands.getOrDefault(command, msg -> msg).apply(argument);
-                writer.println(response);
+                if (commands.containsKey(command)) {
+                    String response = commands.get(command).apply(argument);
+                    writer.println(response);
 
-                if (command.equalsIgnoreCase("bye")) {
-                    System.out.println("Клиент отключился: " + socket.getInetAddress());
-                    break;
+                    if (command.equalsIgnoreCase("bye")) {
+                        System.out.println("Клиент отключился: " + socket.getInetAddress());
+                        break;
+                    }
+                } else {
+                    writer.println(input);
                 }
             }
         } catch (IOException e) {
@@ -68,6 +72,5 @@ public class EchoServer {
                 e.printStackTrace();
             }
         }
-
     }
 }
