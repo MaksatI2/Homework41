@@ -1,4 +1,5 @@
 package server;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -19,35 +20,35 @@ public class EchoClient {
     }
 
     public void run() {
-        System.out.printf("напиши 'bye' чтобы выйти%n%n%n");
+        System.out.println("Напиши 'bye' чтобы выйти\n");
 
-        try (var socket = new Socket(host, port)) {
+        try (Socket socket = new Socket(host, port);
+             Scanner scanner = new Scanner(System.in, "UTF-8");
+             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+             Scanner serverInput = new Scanner(socket.getInputStream(), "UTF-8")) {
 
-            var scanner = new Scanner(System.in, "UTF-8");
-            var output = socket.getOutputStream();
-            var writer = new PrintWriter(output);
+            while (true) {
+                System.out.print("Вы: ");
+                String message = scanner.nextLine();
+                writer.println(message);
 
-            try (scanner; writer) {
-                while (true) {
+                if (serverInput.hasNextLine()) {
+                    String response = serverInput.nextLine();
+                    System.out.println("Сервер: " + response);
+                }
 
-                    String message = scanner.nextLine();
-                    writer.write(message);
-                    writer.write(System.lineSeparator());
-                    writer.flush();
-
-                    if ("bye".equals(message.toLowerCase())) {
-                        return;
-                    }
+                if ("bye".equalsIgnoreCase(message)) {
+                    System.out.println("Отключение...");
+                    break;
                 }
             }
+
         } catch (NoSuchElementException ex) {
-            System.out.printf("Соединение потеряно!%n");
+            System.out.println("Соединение потеряно!");
+
         } catch (IOException e) {
-            var msg = "Не удалось подключиться к %s:%s!%n";
-            System.out.printf(msg, host, port);
+            System.out.printf("Не удалось подключиться к %s:%d!%n", host, port);
             e.printStackTrace();
-
         }
-
     }
 }
