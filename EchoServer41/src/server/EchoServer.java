@@ -2,6 +2,7 @@ package server;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.NoSuchElementException;
@@ -38,24 +39,21 @@ public class EchoServer {
 
     }
 
-    private void handle (Socket socket) throws IOException {
-        var input = socket.getInputStream();
-        var isr = new InputStreamReader(input, "UTF-8");
-        try (var scanner = new Scanner(isr)) {
+    private void handle(Socket socket) throws IOException {
+        try (Scanner scanner = new Scanner(socket.getInputStream(), "UTF-8");
+             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
 
-            while (true) {
+            while (scanner.hasNextLine()) {
+                String message = scanner.nextLine().strip();
+                System.out.printf("Получено: %s%n", message);
 
-                var message = scanner.nextLine().strip();
-                System.out.printf("Полученно: %s%n", message);
+                writer.println("Отправлено: " + message);
 
-                if (message.toLowerCase().equals("bye")) {
-                    System.out.println("Клиент отключился");
-                    return;
-
+                if (message.equalsIgnoreCase("bye")) {
+                    System.out.println("Клиент отключился.");
+                    break;
                 }
-
             }
-
         } catch (NoSuchElementException ex) {
             System.out.println("Клиент неожиданно отключился.");
         }
